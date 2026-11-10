@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "python3",
+      "args": ["scripts/mcp_wrapper.py", "filesystem"],
+      "description": "Local repository files. The wrapper reads MCP_FILESYSTEM_ROOT and an optional OAuth read-only profile outside the repo. This file holds no credentials."
+    }
+  }
+}

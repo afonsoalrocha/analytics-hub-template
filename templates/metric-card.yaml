@@ -1,0 +1,26 @@
+id: metric_id
+name: Business name
+status: certified
+definition: One sentence a colleague outside the data team can repeat.
+formula:
+  numerator: count(distinct order_id)
+  denominator: null
+  aggregation: count_distinct
+grain: the source row, and the rollup you publish
+default_date_column: event_timestamp
+required_filters:
+  - status = 'delivered'
+allowed_dimensions:
+  - name: month
+    caution: ""
+maturity_days: 0
+reconciliation_source: The independent total this metric must be compared with.
+owner: role of the person who decided
+decided_at: 2026-11-10
+block_reason: null
+history:
+  - "on": "2026-11-10"
+    change: Initial definition.
+# status is one of certified, indicative, blocked.
+# block_reason is a sentence when status is blocked, and null otherwise.
+# Indicative metrics are published with the _indicative suffix.

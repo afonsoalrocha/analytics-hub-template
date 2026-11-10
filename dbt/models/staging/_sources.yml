@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: olist
+    schema: raw
+    description: >
+      Tables loaded by scripts/prepare_data.py from the Olist public extract
+      or from the seeded synthetic fallback.
+    tables:
+      - name: orders
+        description: One row per order.
+      - name: order_items
+        description: One row per item inside an order.
+      - name: customers
+        description: One row per order-level customer id. customer_unique_id is the person.
+      - name: payments
+        description: One row per payment line. Used only to reconcile item value.
