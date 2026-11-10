@@ -30,12 +30,12 @@ flowchart TD
   D -->|ok ou warn| E[Interrogação: o humano pergunta se reconcilia e por quê]
   E -->|redefinir| B
   E --> F[Log de insight: insights.md e revisão só de inclusão]
-  F --> G[Fechar: registro.yaml e merge]
+  F --> G[Fechar: validador, registro e merge]
 ```
 
 Cada demanda é uma pasta `demandas/NNN-slug/` e um item em `demandas/registro.yaml`. O registro é o único índice. Os estados são `aberta`, `em_spec`, `em_build`, `em_interpretacao`, `fechada` e `pausada`. Cada transição tem data e motivo.
 
-Fluxo git: um branch por demanda, no nome `worktree-demanda-NNN-slug`. O merge fecha a demanda. Prefixos de commit: `feat(demandas)`, `docs(conhecimento)`, `docs(verificacao)`, `chore`.
+Fluxo git: um worktree e um branch por demanda, no nome `worktree-demanda-NNN-slug`. Abra com `git worktree add ../worktree-demanda-NNN-slug -b worktree-demanda-NNN-slug` e feche, a partir do branch base, com `git merge --no-ff worktree-demanda-NNN-slug`. O merge commit guarda a demanda como uma unidade de histórico. `python scripts/demand_worktree.py` imprime esses comandos e não os executa. Antes do merge, `python scripts/validate_completion.py --demand NNN` imprime `ok`, `partial` ou `blocked`. Uma demanda `blocked` continua aberta. Prefixos de commit: `feat(demandas)`, `docs(conhecimento)`, `docs(verificacao)`, `chore`.
 
 ## Princípios
 
@@ -74,14 +74,14 @@ Uma verificação rápida está em `verificacoes-rapidas/2018-08-20-participacao
 | `demandas/` | Uma pasta por demanda, mais `registro.yaml` |
 | `verificacoes-rapidas/` | Uma checagem datada, com notas e script |
 | `conhecimento/` | Notas duráveis e o catálogo de métricas |
-| `produtos/` | O contrato de um ativo publicado |
+| `produtos/` | Um ativo publicado: `contrato.md`, `asset.yaml` e `CHANGELOG.md` |
 | `automacoes/` | Uma rotina recorrente, com `docs/ARCHITECTURE.md`, config e testes |
 | `dbt/` | Staging, a regra de mês completo, marts e views de auditoria |
 | `scripts/connectors/` | DuckDB, Postgres, Databricks SQL, BigQuery, GA4, Azure Blob, Azure DevOps |
 | `scripts/gates/` | Funções puras de gate e o leak scan |
-| `templates/` | Demanda, arquitetura, verificação, insight, metric card |
-| `tests/` | Gates, catálogo, conectores com mock, leak scan |
-| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, gitleaks, denylist |
+| `templates/` | Demanda, arquitetura, verificação, insight, metric card, ativo |
+| `tests/` | Gates, catálogo, conectores com mock, leak scan, estrutura |
+| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, estrutura, gitleaks, denylist |
 
 ## Gates
 
@@ -103,11 +103,31 @@ O runner sai com código 1 se houver qualquer block. Um warn é impresso e o có
 
 ## Conectores
 
-Cada conector implementa `query(sql, params)`, `healthcheck()` e um contexto que fecha a conexão. Credenciais vêm do ambiente (veja `.env.example`). Chamadas remotas usam HTTPS, verificam TLS e declaram timeout e retentativas. O Postgres aceita só `verify-full` e `verify-ca`.
+Cada conector implementa `query(sql, params)`, `identity()`, `healthcheck()` e um contexto que fecha a conexão. Credenciais vêm do ambiente (veja `.env.example`). Chamadas remotas usam HTTPS, verificam TLS e declaram timeout e retentativas. O Postgres aceita só `verify-full` e `verify-ca`.
 
-GA4 não é um motor SQL: `query` recebe um JSON de RunReport. O Azure Blob recebe o caminho do blob. O Azure DevOps recebe uma sentença WIQL. Os testes em `tests/connectors/` usam mock e não precisam de credencial.
+Os conectores são somente leitura, a menos que `CONNECTOR_ALLOW_WRITE=true`. Uma leitura é uma sentença cujo primeiro verbo é `select`, `with`, `show`, `describe`, `explain` ou `values`. `CONNECTOR_DRY_RUN=true` devolve a sentença e o teto de bytes sem chamar a rede. `CONNECTOR_MAX_BYTES` (padrão 1 GiB) vai para o BigQuery como `maximumBytesBilled`. O Databricks recebe o mesmo teto como `byte_limit`, que limita os bytes devolvidos pela Statement API. `identity()` devolve a conta, o projeto ou o banco e deixa o segredo no ambiente do processo.
+
+GA4 não é um motor SQL: `query` recebe um JSON de RunReport. O Azure Blob recebe o caminho do blob e recusa um caminho que saia do container. O Azure DevOps recebe uma sentença WIQL. Os testes usam mock e não precisam de credencial.
 
 O padrão é DuckDB, sem credencial.
+
+## Produtos
+
+Cada pasta em `produtos/` é um ativo publicado. `asset.yaml` registra o papel do dono, o status (`certificada`, `indicativa` ou `bloqueada`), as fontes, a atualização e o SLA. `CHANGELOG.md` é só de inclusão. `contrato.md` é o contrato funcional.
+
+## Guardrails do agente
+
+`CLAUDE.md` lista as skills. A tabela sai do frontmatter de `.claude/skills/*/SKILL.md` via `scripts/render_skills.py`, e o CI falha quando a tabela commitada diverge.
+
+`.claude/hooks/guard_paths.py` recusa leitura ou escrita de `.env` (`.env.example` continua legível), recusa diretórios temporários e recusa `python`, `pip`, `pytest`, `dbt`, `ruff` ou `sqlfluff` fora de `.venv/bin/...`. Crie o ambiente com `python3 -m venv .venv`.
+
+`.mcp.json` chama `scripts/mcp_wrapper.py`. Tokens ficam no ambiente ou num perfil OAuth fora do repositório. O perfil precisa de `read_only: true`. O JSON não carrega credencial.
+
+`scripts/validate_structure.py` confere pastas e arquivos obrigatórios, o registro, o catálogo de métricas, os documentos de cada demanda, o ativo de cada produto e os invariantes de cada automação. O CI roda esse script. O `docs/ARCHITECTURE.md` de uma automação declara os invariantes, inclusive zero chamadas de modelo de linguagem em tempo de execução.
+
+## O que fica fora do git
+
+Extratos brutos, arquivos de warehouse, saídas de demanda, snapshots de automação, o `target/` do dbt e logs ficam sem rastreio. SQL, Python, YAML e Markdown ficam no git. O `.gitignore` lista os padrões pesados, entre eles `*.duckdb`, `*.parquet`, `*.xlsx`, `demandas/**/outputs/`, `automacoes/**/snapshots/` e `dbt/target/`.
 
 ## Como impedir que nomes internos vazem
 
@@ -136,7 +156,7 @@ A semente sintética é original, determinística (`seed=42`) e pequena. A integ
 - A tolerância de 0,5% na reconciliação, o limiar de 50% na variação e a janela de 90 dias da recompra. São premissas do template, e estão registradas como tal.
 - `.leak-denylist.txt` e o secret `LEAK_DENYLIST`.
 - `.env`, para cada conector remoto que você for usar de verdade.
-- `.mcp.json`, que aponta para um servidor de filesystem local e não é necessário para o demo.
+- `.mcp.json`, que chama `scripts/mcp_wrapper.py` e não carrega credencial.
 
 O fluxo de demandas, o registro, o catálogo certificada / indicativa / bloqueada, os gates de block e warn, o snapshot congelado e os logs de decisão só de inclusão são o método. As métricas da Olist são o exemplo público.
 

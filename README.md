@@ -30,12 +30,12 @@ flowchart TD
   D -->|ok or warn| E[Interrogation: human asks whether it reconciles and why]
   E -->|redefine| B
   E --> F[Insight log: insights.md and an append-only revision log]
-  F --> G[Close: registro.yaml and merge]
+  F --> G[Close: validator, registry, merge commit]
 ```
 
 Each demand is a folder `demandas/NNN-slug/` and one entry in `demandas/registro.yaml`. The registry is the only index. Status values are `aberta`, `em_spec`, `em_build`, `em_interpretacao`, `fechada`, and `pausada`. Every transition has a date and a reason.
 
-Git flow: one branch per demand, named `worktree-demanda-NNN-slug`. The merge closes the demand. Commit prefixes: `feat(demandas)`, `docs(conhecimento)`, `docs(verificacao)`, `chore`.
+Git flow: one worktree and one branch per demand, named `worktree-demanda-NNN-slug`. Open it with `git worktree add ../worktree-demanda-NNN-slug -b worktree-demanda-NNN-slug`, and close it from the base branch with `git merge --no-ff worktree-demanda-NNN-slug`. The merge commit keeps the demand as its own unit of history. `python scripts/demand_worktree.py` prints those commands and does not run them. Before the merge, `python scripts/validate_completion.py --demand NNN` prints `ok`, `partial`, or `blocked`. A blocked demand stays open. Commit prefixes: `feat(demandas)`, `docs(conhecimento)`, `docs(verificacao)`, `chore`.
 
 ## Principles
 
@@ -74,14 +74,14 @@ A quick check lives in `verificacoes-rapidas/2018-08-20-participacao-do-frete/`.
 | `demandas/` | One folder per demand, plus `registro.yaml` |
 | `verificacoes-rapidas/` | A dated check with notes and a script |
 | `conhecimento/` | Durable notes and the metric catalog |
-| `produtos/` | The contract of a published asset |
+| `produtos/` | A published asset: `contrato.md`, `asset.yaml`, and `CHANGELOG.md` |
 | `automacoes/` | A recurring job, with `docs/ARCHITECTURE.md`, config, and tests |
 | `dbt/` | Staging, the complete-month rule, marts, and audit views |
 | `scripts/connectors/` | DuckDB, Postgres, Databricks SQL, BigQuery, GA4, Azure Blob, Azure DevOps |
 | `scripts/gates/` | Pure gate functions and the leak scan |
-| `templates/` | Demand, architecture, verification, insight, metric card |
-| `tests/` | Gates, catalog, connectors with mocks, leak scan |
-| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, gitleaks, denylist |
+| `templates/` | Demand, architecture, verification, insight, metric card, product asset |
+| `tests/` | Gates, catalog, connectors with mocks, leak scan, structure |
+| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, structure, gitleaks, denylist |
 
 ## Gates
 
@@ -103,11 +103,31 @@ The runner exits 1 when any block fails. A warn is printed and the exit code sta
 
 ## Connectors
 
-Every connector implements `query(sql, params)`, `healthcheck()`, and a context manager that closes the connection. Credentials come from the environment (see `.env.example`). Remote calls use HTTPS, verify TLS, and set a timeout and retries. Postgres accepts only `verify-full` and `verify-ca`.
+Every connector implements `query(sql, params)`, `identity()`, `healthcheck()`, and a context manager that closes the connection. Credentials come from the environment (see `.env.example`). Remote calls use HTTPS, verify TLS, and set a timeout and retries. Postgres accepts only `verify-full` and `verify-ca`.
 
-GA4 is not a SQL engine: `query` takes a JSON RunReport body. Azure Blob takes a blob path. Azure DevOps takes a WIQL statement. Tests under `tests/connectors/` mock the network. None of them need a credential.
+Connectors are read-only unless `CONNECTOR_ALLOW_WRITE=true`. A read is a single statement whose first verb is `select`, `with`, `show`, `describe`, `explain`, or `values`. `CONNECTOR_DRY_RUN=true` returns the statement and the byte ceiling without a network call. `CONNECTOR_MAX_BYTES` (default 1 GiB) is sent as BigQuery `maximumBytesBilled`. Databricks receives the same ceiling as `byte_limit`, which caps the bytes the Statement API returns. `identity()` returns the account, project, or database and leaves the secret in the process environment.
+
+GA4 is not a SQL engine: `query` takes a JSON RunReport body. Azure Blob takes a blob path and refuses a path that leaves the container. Azure DevOps takes a WIQL statement. Tests mock the network. None of them need a credential.
 
 DuckDB is the default and needs nothing.
+
+## Products
+
+Each directory in `produtos/` is a published asset. `asset.yaml` names the owner role, the status (`certificada`, `indicativa`, or `bloqueada`: certified, indicative, or blocked), the sources, the refresh, and the SLA. `CHANGELOG.md` is append-only. `contrato.md` is the functional contract.
+
+## Agent guardrails
+
+`CLAUDE.md` lists the skills. The table is generated from `.claude/skills/*/SKILL.md` by `scripts/render_skills.py`, and CI fails when the committed table drifts.
+
+`.claude/hooks/guard_paths.py` refuses a read or write of `.env` (`.env.example` stays readable), refuses temp directories, and refuses `python`, `pip`, `pytest`, `dbt`, `ruff`, or `sqlfluff` unless the binary is `.venv/bin/...`. Create the environment with `python3 -m venv .venv`.
+
+`.mcp.json` starts `scripts/mcp_wrapper.py`. Tokens stay in the environment or in an OAuth profile outside the repository. The profile has to set `read_only` to true. The JSON file holds no credentials.
+
+`scripts/validate_structure.py` checks the required folders and files, the registry, the metric catalog, each demand's documents, each product asset, and each automation's invariants. CI runs it on every change. An automation's `docs/ARCHITECTURE.md` states its invariants, including zero language-model calls at runtime.
+
+## What stays out of git
+
+Raw extracts, warehouse files, demand outputs, automation snapshots, dbt's `target/` directory, and logs stay untracked. SQL, Python, YAML, and Markdown stay in git. `.gitignore` lists the heavy patterns, including `*.duckdb`, `*.parquet`, `*.xlsx`, `demandas/**/outputs/`, `automacoes/**/snapshots/`, and `dbt/target/`.
 
 ## Keeping internal names out
 
@@ -136,7 +156,7 @@ The synthetic seed is original, deterministic (`seed=42`), and small. Continuous
 - The 0.5% reconciliation tolerance, the 50% variation threshold, and the 90-day repurchase window. They are template assumptions, recorded as such.
 - `.leak-denylist.txt` and the `LEAK_DENYLIST` secret.
 - `.env` for any remote connector you actually use.
-- `.mcp.json`, which points at a local filesystem server and is not required to run the demo.
+- `.mcp.json`, which starts `scripts/mcp_wrapper.py` and holds no credentials.
 
 The demand flow, the registry, the certified / indicative / blocked catalog, the block-versus-warn gates, the frozen snapshot, and the append-only decision logs are the method. The Olist metrics are the public example.
 

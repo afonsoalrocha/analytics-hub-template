@@ -7,12 +7,14 @@ import pandas as pd
 from connectors.base import Connector, ConnectorError
 from connectors.env import env_float, env_int, require_env
 from connectors.http import make_session, request, require_https
+from connectors.policy import Policy, apply_sql, load_policy
 
 PENDING = frozenset({"PENDING", "RUNNING"})
 
 
 class DatabricksConnector(Connector):
-    def __init__(self, session: object | None = None) -> None:
+    def __init__(self, session: object | None = None, *, policy: Policy | None = None) -> None:
+        self.policy = policy or load_policy()
         host = require_https(require_env("DATABRICKS_HOST"))
         self._host = host.rstrip("/")
         self._token = require_env("DATABRICKS_TOKEN")
@@ -22,12 +24,16 @@ class DatabricksConnector(Connector):
         self._session = session or make_session()
 
     def query(self, sql: str, params: dict[str, object] | None = None) -> pd.DataFrame:
+        preview = apply_sql(self.policy, sql, engine="databricks")
+        if preview is not None:
+            return preview
         payload: dict[str, object] = {
             "warehouse_id": self._warehouse_id,
             "statement": sql,
             "wait_timeout": "50s",
             "on_wait_timeout": "CONTINUE",
             "disposition": "INLINE",
+            "byte_limit": self.policy.max_bytes,
         }
         if params:
             payload["parameters"] = [
@@ -61,6 +67,24 @@ class DatabricksConnector(Connector):
             )
             body = _json(response)
         raise ConnectorError("Databricks statement did not finish before the poll limit.")
+
+    def identity(self) -> dict[str, str]:
+        response = request(
+            self._session,
+            "GET",
+            f"{self._host}/api/2.0/preview/scim/v2/Me",
+            timeout=self._timeout,
+            headers=self._headers(),
+        )
+        body = _json(response)
+        user_name = body.get("userName") or body.get("displayName")
+        if not isinstance(user_name, str) or not user_name:
+            raise ConnectorError("Databricks identity response has no user name.")
+        return {
+            "engine": "databricks",
+            "user_name": user_name,
+            "warehouse_id": self._warehouse_id,
+        }
 
     def healthcheck(self) -> bool:
         frame = self.query("select 1 as ok")

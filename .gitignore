@@ -18,6 +18,13 @@ demandas/**/outputs/
 automacoes/**/snapshots/
 *.partial
 *.tmp
+*.parquet
+*.xlsx
+*.xls
+logs/
+htmlcov/
+.coverage
+coverage.xml
 .DS_Store
 dist/
 *.egg-info/

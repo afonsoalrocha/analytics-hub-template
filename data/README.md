@@ -20,3 +20,7 @@ file is large.
 Attribute Olist when you publish a number from that extract, and keep the
 CC BY-NC-SA 4.0 terms in mind. The synthetic seed is original to this
 template and is what continuous integration builds.
+
+Warehouse files, raw extracts, demand outputs, automation snapshots, and
+logs are heavy artifacts. They stay out of git. The logic that produces
+them — SQL, Python, YAML, and Markdown — stays in git.

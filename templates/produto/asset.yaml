@@ -1,0 +1,8 @@
+id: product-slug
+name: Asset name
+owner_role: role that owns the definition
+status: certificada
+sources:
+  - schema.table
+refresh: How often the asset is rebuilt, and whether history is frozen.
+sla: What a reader can expect after a block, a warning, and a clean run.

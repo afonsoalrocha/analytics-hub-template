@@ -31,6 +31,7 @@ The public path is the Olist CSV sample. The offline path is the seeded syntheti
 - Delivered orders, product revenue, and average ticket are present and non-negative.
 - A month already present in `snapshots/monthly_commerce.csv` keeps its values on the next run.
 - The snapshot file is replaced only after the gates have passed. A block leaves the previous file in place.
+- Zero language-model calls at runtime. The close reads the mart, runs the gates, and writes the snapshot.
 
 ## Gates
 

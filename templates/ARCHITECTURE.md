@@ -10,6 +10,8 @@ Link the metric cards. The cards are the source of truth.
 
 ## Invariants
 
+- Zero language-model calls at runtime. The close reads the mart, runs the gates, and writes the snapshot.
+
 ## Gates
 
 | Gate | Severity | What it checks here |
