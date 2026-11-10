@@ -1,0 +1,36 @@
+id: repurchase_rate
+name: Repurchase rate
+status: indicativa
+definition: >
+  People with two or more delivered orders, divided by people with at least
+  one delivered order, among people whose first purchase is old enough to
+  have had a chance to return.
+formula:
+  numerator: count of customer_unique_id with 2 or more delivered orders
+  denominator: count of mature customer_unique_id
+  aggregation: ratio
+grain: customer_unique_id rolled up to the month of first purchase
+default_date_column: order_purchase_timestamp
+required_filters:
+  - order_status = 'delivered'
+  - first purchase at least maturity_days before the end of the last complete month
+allowed_dimensions:
+  - name: cohort_month
+    caution: >
+      A cohort near the maturity cutoff has had little time to return.
+      Read the window before comparing cohorts.
+maturity_days: 90
+reconciliation_source: >
+  Count of mature people and count of people with two or more orders in
+  mart_repurchase_by_cohort. There is no second customer system in this dataset.
+owner: template maintainer
+decided_at: 2026-11-10
+block_reason: null
+published_components:
+  - mature_customers
+  - repurchasing_customers
+history:
+  - "on": "2026-11-10"
+    change: >
+      Initial indicative definition. The 90-day window is a template assumption
+      and the column keeps the _indicativo suffix.

@@ -1,0 +1,25 @@
+version: 1
+demands:
+  - id: "001"
+    slug: conversao-e-receita-mensal
+    title: Monthly delivered demand, revenue, and the conversion question
+    path: demandas/001-conversao-e-receita-mensal
+    status: fechada
+    requester_role: analytics lead
+    opened_on: 2026-11-10
+    transitions:
+      - "on": "2026-11-10"
+        to: aberta
+        reason: The showcase question was accepted into the demand register.
+      - "on": "2026-11-10"
+        to: em_spec
+        reason: The human wrote the metrics, the grain, the period rule, and the acceptance gates.
+      - "on": "2026-11-10"
+        to: em_build
+        reason: The agent implemented the dbt models, the audit views, and the gate runner.
+      - "on": "2026-11-10"
+        to: em_interpretacao
+        reason: The gates passed with the variation warning left for the human to read.
+      - "on": "2026-11-10"
+        to: fechada
+        reason: The insight log was accepted and the demand is the worked example in this template.

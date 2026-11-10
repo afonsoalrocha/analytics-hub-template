@@ -1,0 +1,14 @@
+title = "analytics-hub-template"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholder files that document empty settings."
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.leak-denylist\.example\.txt$''',
+  '''(^|/)\.venv/''',
+  '''(^|/)dbt/target/''',
+  '''__pycache__/''',
+]

@@ -1,0 +1,18 @@
+version: 1
+topics:
+  - id: maturidade-de-metricas
+    path: conhecimento/conceitos/maturidade-de-metricas.md
+    summary: >
+      A generic maturity cascade. The top of a funnel can be read quickly.
+      The bottom waits until the behavior has had time to happen.
+metrics:
+  - id: average_ticket
+    path: conhecimento/metricas/average_ticket.yaml
+  - id: delivered_orders
+    path: conhecimento/metricas/delivered_orders.yaml
+  - id: product_revenue
+    path: conhecimento/metricas/product_revenue.yaml
+  - id: repurchase_rate
+    path: conhecimento/metricas/repurchase_rate.yaml
+  - id: visit_to_order_conversion
+    path: conhecimento/metricas/visit_to_order_conversion.yaml
