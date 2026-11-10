@@ -1,6 +1,13 @@
 # Analytics Hub Template
 
-A working environment for analysts who want every business question to become a traceable request, every number to pass a deterministic gate, and every interpretation to keep a history.
+[![CI](https://github.com/afonsoalrocha/analytics-hub-template/actions/workflows/ci.yml/badge.svg)](https://github.com/afonsoalrocha/analytics-hub-template/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![dbt](https://img.shields.io/badge/dbt-DuckDB-FF694B)](dbt/dbt_project.yml)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+
+**Questions become requests. Numbers get a status. Agents implement under gates.**
+
+Analysts still ship a number nobody can defend: no grain, no complete-month rule, no reconciliation, and sometimes a denominator that was invented. This template turns every business question into a numbered request with metrics and acceptance criteria. A human owns the architecture, the definitions, and the reading of the result. An agent writes the SQL, the dbt models, and the tests. Deterministic gates either block the publication or warn and let it through. The language model drafts and asks. The warehouse calculates.
 
 A human owns the architecture, the metric definitions, the acceptance criteria, and the reading of the result. An agent implements the SQL, the tests, and the scripts. The language model drafts and asks. The warehouse calculates.
 
@@ -46,7 +53,7 @@ Git flow: one worktree and one branch per request, named `worktree-request-NNN-s
 5. A metric is `certified`, `indicative`, or `blocked`. Nothing is published without a status.
 6. One source of truth per subject: the registry, the metric card, the request config.
 7. A new number is reconciled to an independent source, or the difference is declared.
-8. The repository starts private and starts empty of proprietary data.
+8. The repository starts empty of proprietary data. If you adopt this with internal data, start from a private copy.
 
 ## What the example answers
 
