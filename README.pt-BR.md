@@ -144,9 +144,11 @@ pre-commit install
 
 ## Dados e licença
 
-O código deste repositório é MIT. Veja `LICENSE`.
+O código deste repositório é MIT. Veja `LICENSE`. Essa licença cobre o código do template. Os CSVs da Olist são uma obra à parte.
 
-O Brazilian E-Commerce Public Dataset by Olist é uma obra à parte, publicada no [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) sob CC BY-NC-SA 4.0. Este template não versiona esses arquivos. `scripts/prepare_data.py` baixa a amostra CSV de [olist/work-at-olist-data](https://github.com/olist/work-at-olist-data) e carrega pedidos, itens, clientes e pagamentos. Atribua a Olist quando publicar um número desse extrato.
+O Brazilian E-Commerce Public Dataset by Olist está publicado no [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) sob [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). NonCommercial significa que o dataset não admite uso comercial. ShareAlike significa que uma adaptação do dataset permanece sob a mesma licença. Este template não versiona esses arquivos.
+
+`scripts/prepare_data.py` baixa a amostra CSV de [olist/work-at-olist-data](https://github.com/olist/work-at-olist-data). Esse repositório declara MIT no GitHub e entra só como fonte dos arquivos. Trate os CSVs sob a licença canônica do Kaggle, CC BY-NC-SA 4.0, que é a licença mais restritiva e exclui uso comercial. Atribua a Olist quando publicar um número desse extrato.
 
 A semente sintética é original, determinística (`seed=42`) e pequena. A integração contínua usa essa semente para não depender do download.
 
