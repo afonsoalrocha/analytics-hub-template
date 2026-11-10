@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: mart_monthly_commerce
+    description: >
+      Certified monthly commerce mart. Grain is purchase_month for closed,
+      fully covered months. See conhecimento/metricas.
+    columns:
+      - name: purchase_month
+        tests:
+          - unique
+          - not_null
+      - name: delivered_orders
+        tests:
+          - not_null
+      - name: product_revenue
+        tests:
+          - not_null
+      - name: average_ticket
+        tests:
+          - not_null
+  - name: mart_repurchase_by_cohort
+    description: >
+      Indicative repurchase rate by first-purchase cohort. The rate column
+      keeps the _indicativo suffix.
+    columns:
+      - name: cohort_month
+        tests:
+          - unique
+          - not_null
+      - name: repurchase_rate_indicativo
+        tests:
+          - not_null

@@ -1,0 +1,9 @@
+name: fechamento-mensal
+source_relation: marts.mart_monthly_commerce
+snapshot_path: snapshots/monthly_commerce.csv
+mode: append
+grain: purchase_month
+frozen_columns:
+  - delivered_orders
+  - product_revenue
+  - average_ticket

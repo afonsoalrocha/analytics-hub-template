@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "description": "Local repository files. Read them to implement a demand. Do not use a write tool to bypass a gate, and do not point this at a production warehouse."
+    }
+  }
+}

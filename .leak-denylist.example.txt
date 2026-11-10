@@ -1,0 +1,12 @@
+# Local denylist for the leak gate.
+# Copy this file to .leak-denylist.txt and replace the placeholder lines.
+# That copy is gitignored. Never commit it.
+# In GitHub Actions, store the same text in the repository secret LEAK_DENYLIST.
+#
+# One term per line. Blank lines and lines starting with # are ignored.
+# Matching is a case-insensitive substring over tracked text files.
+# Terms shorter than 4 characters are ignored. Use distinctive phrases:
+# internal hostnames, schema names, project codenames, and similar.
+
+REPLACE_ME_INTERNAL_HOSTNAME
+REPLACE_ME_INTERNAL_SCHEMA
