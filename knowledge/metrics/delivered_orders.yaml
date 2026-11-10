@@ -1,0 +1,30 @@
+id: delivered_orders
+name: Delivered orders
+status: certified
+definition: >
+  Distinct orders with status delivered, counted in the month of the purchase.
+formula:
+  numerator: count(distinct order_id)
+  denominator: null
+  aggregation: count_distinct
+grain: order_id rolled up to purchase_month
+default_date_column: order_purchase_timestamp
+required_filters:
+  - order_status = 'delivered'
+  - complete calendar months only
+allowed_dimensions:
+  - name: purchase_month
+    caution: ""
+  - name: customer_state
+    caution: >
+      State cuts get thin quickly. Rank a state only when the order count
+      is large enough for the decision in front of you.
+maturity_days: 0
+reconciliation_source: >
+  Distinct delivered order ids in staging.stg_orders for the same complete months.
+owner: template maintainer
+decided_at: 2026-11-10
+block_reason: null
+history:
+  - "on": "2026-11-10"
+    change: Initial definition for the public Olist example.

@@ -1,6 +1,6 @@
 # Analytics Hub Template
 
-A working environment for analysts who want every business question to become a traceable demand, every number to pass a deterministic gate, and every interpretation to keep a history.
+A working environment for analysts who want every business question to become a traceable request, every number to pass a deterministic gate, and every interpretation to keep a history.
 
 A human owns the architecture, the metric definitions, the acceptance criteria, and the reading of the result. An agent implements the SQL, the tests, and the scripts. The language model drafts and asks. The warehouse calculates.
 
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 make demo
 ```
 
-`make demo` downloads the public Olist e-commerce extract when it can, and otherwise builds a seeded synthetic extract with the same tables. It then runs dbt on local DuckDB, closes demand 001, writes the monthly snapshot, and prints a one-line freight check. No warehouse credentials.
+`make demo` downloads the public Olist e-commerce extract when it can, and otherwise builds a seeded synthetic extract with the same tables. It then runs dbt on local DuckDB, closes request 001, writes the monthly snapshot, and prints a one-line freight check. No warehouse credentials.
 
 Offline from the start:
 
@@ -27,15 +27,15 @@ flowchart TD
   B --> C[Build: agent implements SQL, dbt, and Python in a worktree]
   C --> D{Gates pass?}
   D -->|block| C
-  D -->|ok or warn| E[Interrogation: human asks whether it reconciles and why]
+  D -->|complete or warn| E[Interrogation: human asks whether it reconciles and why]
   E -->|redefine| B
   E --> F[Insight log: insights.md and an append-only revision log]
   F --> G[Close: validator, registry, merge commit]
 ```
 
-Each demand is a folder `demandas/NNN-slug/` and one entry in `demandas/registro.yaml`. The registry is the only index. Status values are `aberta`, `em_spec`, `em_build`, `em_interpretacao`, `fechada`, and `pausada`. Every transition has a date and a reason.
+Each request is a folder `requests/NNN-slug/` and one entry in `requests/registry.yaml`. The registry is the only index. Lifecycle status is `open`, `in_spec`, `in_build`, `in_interpretation`, `closed`, or `paused`. Every transition has a date and a reason. Closing outcome is a separate field: `complete`, `partial`, or `blocked`. A paused request cannot carry an outcome.
 
-Git flow: one worktree and one branch per demand, named `worktree-demanda-NNN-slug`. Open it with `git worktree add ../worktree-demanda-NNN-slug -b worktree-demanda-NNN-slug`, and close it from the base branch with `git merge --no-ff worktree-demanda-NNN-slug`. The merge commit keeps the demand as its own unit of history. `python scripts/demand_worktree.py` prints those commands and does not run them. Before the merge, `python scripts/validate_completion.py --demand NNN` prints `ok`, `partial`, or `blocked`. A blocked demand stays open. Commit prefixes: `feat(demandas)`, `docs(conhecimento)`, `docs(verificacao)`, `chore`.
+Git flow: one worktree and one branch per request, named `worktree-request-NNN-slug`. Open it with `git worktree add ../worktree-request-NNN-slug -b worktree-request-NNN-slug`, and close it from the base branch with `git merge --no-ff worktree-request-NNN-slug`. The merge commit keeps the request as its own unit of history. `python scripts/request_worktree.py` prints those commands and does not run them. Before the merge, `python scripts/validate_completion.py --request NNN` prints `complete`, `partial`, or `blocked`. A blocked request stays open. Commit prefixes: `feat(requests)`, `docs(knowledge)`, `docs(quick-check)`, `chore`.
 
 ## Principles
 
@@ -43,45 +43,45 @@ Git flow: one worktree and one branch per demand, named `worktree-demanda-NNN-sl
 2. The human owns definitions and interpretation. The agent implements.
 3. A decision is written down. `ARCHITECTURE.md` and `insights.md` keep an append-only history.
 4. Integrity blocks. An anomaly warns. The severity is explicit.
-5. A metric is `certificada`, `indicativa`, or `bloqueada`. Nothing is published without a status.
-6. One source of truth per subject: the registry, the metric card, the demand config.
+5. A metric is `certified`, `indicative`, or `blocked`. Nothing is published without a status.
+6. One source of truth per subject: the registry, the metric card, the request config.
 7. A new number is reconciled to an independent source, or the difference is declared.
 8. The repository starts private and starts empty of proprietary data.
 
 ## What the example answers
 
-Demand `001-conversao-e-receita-mensal` asks how delivered demand and revenue moved, what the ticket was, how many mature customers came back, and what share of visits became orders.
+Request `001-monthly-conversion-and-revenue` asks how delivered orders and revenue moved, what the ticket was, how many mature customers came back, and what share of visits became orders.
 
 | Metric | Status | Definition |
 | --- | --- | --- |
-| Delivered orders | certificada | Distinct delivered orders, by purchase month |
-| Product revenue | certificada | Sum of item price on those orders, freight excluded |
-| Average ticket | certificada | Price plus freight, divided by delivered orders |
-| Repurchase rate | indicativa | Mature customers with 2 or more orders, over mature customers |
-| Visit-to-order conversion | bloqueada | The dataset has no visits, so the denominator stays uninvented |
+| Delivered orders | certified | Distinct delivered orders, by purchase month |
+| Product revenue | certified | Sum of item price on those orders, freight excluded |
+| Average ticket | certified | Price plus freight, divided by delivered orders |
+| Repurchase rate | indicative | Mature customers with 2 or more orders, over mature customers |
+| Visit-to-order conversion | blocked | The dataset has no visits, so the denominator stays uninvented |
 
-The published files appear under `demandas/001-conversao-e-receita-mensal/outputs/` after the command above. A certified answer carries the period, the filters, the unit, and the load time in `publication.json`. The indicative rate keeps the suffix `_indicativo`. The blocked metric has no column.
+The published files appear under `requests/001-monthly-conversion-and-revenue/outputs/` after the command above. A certified answer carries the period, the filters, the unit, and the load time in `publication.json`. The indicative rate keeps the suffix `_indicative`. The blocked metric has no column.
 
 The variation gate warns when delivered orders move by more than 50% against the previous month. On the public extract that warning fires on the early-2017 ramp and on November 2017. The synthetic seed is built so only November 2017 crosses the line. Reconciliation of item value against payments warns above a 0.5% gap and, on both extracts shipped here, stays inside that tolerance. Warnings are listed in `outputs/gate_report.json`. They do not stop the write. A block does, and it leaves the previous publication in place.
 
-A quick check lives in `verificacoes-rapidas/2018-08-20-participacao-do-frete/`. It measures the freight share of the latest complete month and stays a check. The monthly close in `automacoes/fechamento-mensal/` appends new months and refuses to rewrite a month already in the snapshot. Its rules are in `docs/ARCHITECTURE.md`.
+A quick check lives in `quick-checks/2018-08-20-freight-share/`. It measures the freight share of the latest complete month and stays a check. The monthly close in `automations/monthly-close/` appends new months and refuses to rewrite a month already in the snapshot. Its rules are in `docs/ARCHITECTURE.md`.
 
 ## Layout
 
 | Path | What it holds |
 | --- | --- |
 | `CLAUDE.md`, `.claude/skills/` | What an agent may implement, and what it leaves to a human |
-| `demandas/` | One folder per demand, plus `registro.yaml` |
-| `verificacoes-rapidas/` | A dated check with notes and a script |
-| `conhecimento/` | Durable notes and the metric catalog |
-| `produtos/` | A published asset: `contrato.md`, `asset.yaml`, and `CHANGELOG.md` |
-| `automacoes/` | A recurring job, with `docs/ARCHITECTURE.md`, config, and tests |
+| `requests/` | One folder per request, plus `registry.yaml` |
+| `quick-checks/` | A dated check with notes and a script |
+| `knowledge/` | Durable notes and the metric catalog |
+| `products/` | A published data product: `contract.md`, `asset.yaml`, and `CHANGELOG.md` |
+| `automations/` | A recurring job, with `docs/ARCHITECTURE.md`, config, and tests |
 | `dbt/` | Staging, the complete-month rule, marts, and audit views |
 | `scripts/connectors/` | DuckDB, Postgres, Databricks SQL, BigQuery, GA4, Azure Blob, Azure DevOps |
 | `scripts/gates/` | Pure gate functions and the leak scan |
-| `templates/` | Demand, architecture, verification, insight, metric card, product asset |
+| `templates/` | Request, architecture, verification, insight, metric card, product asset |
 | `tests/` | Gates, catalog, connectors with mocks, leak scan, structure |
-| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, structure, gitleaks, denylist |
+| `.github/workflows/ci.yml` | ruff, sqlfluff, pytest, dbt build, structure, language, gitleaks, denylist |
 
 ## Gates
 
@@ -113,7 +113,7 @@ DuckDB is the default and needs nothing.
 
 ## Products
 
-Each directory in `produtos/` is a published asset. `asset.yaml` names the owner role, the status (`certificada`, `indicativa`, or `bloqueada`: certified, indicative, or blocked), the sources, the refresh, and the SLA. `CHANGELOG.md` is append-only. `contrato.md` is the functional contract.
+Each directory in `products/` is a published data product. `asset.yaml` names the owner role, the status (`certified`, `indicative`, or `blocked`), the sources, the refresh, and the SLA. `CHANGELOG.md` is append-only. `contract.md` is the functional contract.
 
 ## Agent guardrails
 
@@ -123,11 +123,11 @@ Each directory in `produtos/` is a published asset. `asset.yaml` names the owner
 
 `.mcp.json` starts `scripts/mcp_wrapper.py`. Tokens stay in the environment or in an OAuth profile outside the repository. The profile has to set `read_only` to true. The JSON file holds no credentials.
 
-`scripts/validate_structure.py` checks the required folders and files, the registry, the metric catalog, each demand's documents, each product asset, and each automation's invariants. CI runs it on every change. An automation's `docs/ARCHITECTURE.md` states its invariants, including zero language-model calls at runtime.
+`scripts/validate_structure.py` checks the required folders and files, the registry, the metric catalog, each request's documents, each product asset, and each automation's invariants. CI runs it on every change. An automation's `docs/ARCHITECTURE.md` states its invariants, including zero language-model calls at runtime.
 
 ## What stays out of git
 
-Raw extracts, warehouse files, demand outputs, automation snapshots, dbt's `target/` directory, and logs stay untracked. SQL, Python, YAML, and Markdown stay in git. `.gitignore` lists the heavy patterns, including `*.duckdb`, `*.parquet`, `*.xlsx`, `demandas/**/outputs/`, `automacoes/**/snapshots/`, and `dbt/target/`.
+Raw extracts, warehouse files, request outputs, automation snapshots, dbt's `target/` directory, and logs stay untracked. SQL, Python, YAML, and Markdown stay in git. `.gitignore` lists the heavy patterns, including `*.duckdb`, `*.parquet`, `*.xlsx`, `requests/**/outputs/`, `automations/**/snapshots/`, and `dbt/target/`.
 
 ## Keeping internal names out
 
@@ -160,9 +160,9 @@ The synthetic seed is original, deterministic (`seed=42`), and small. Continuous
 - `.env` for any remote connector you actually use.
 - `.mcp.json`, which starts `scripts/mcp_wrapper.py` and holds no credentials.
 
-The demand flow, the registry, the certified / indicative / blocked catalog, the block-versus-warn gates, the frozen snapshot, and the append-only decision logs are the method. The Olist metrics are the public example.
+The request flow, the registry, the certified / indicative / blocked catalog, the block-versus-warn gates, the frozen snapshot, and the append-only decision logs are the method. The Olist metrics are the public example.
 
-A Portuguese companion lives in `README.pt-BR.md`.
+This English file is canonical. `README.pt-BR.md` is an optional Portuguese translation of it.
 
 ## Author
 

@@ -370,7 +370,7 @@ def check_metric_status(
             if card is None:
                 problems.append(f"{column} has no metric card")
                 continue
-            if card["status"] != "indicativa":
+            if card["status"] != "indicative":
                 problems.append(f"{column} uses the indicative suffix but is {card['status']}")
             continue
         card = by_id.get(column)
@@ -378,13 +378,13 @@ def check_metric_status(
             problems.append(f"{column} has no metric card")
             continue
         status = card["status"]
-        if status == "bloqueada":
+        if status == "blocked":
             problems.append(f"{column} is blocked and stays unpublished")
-        elif status == "indicativa":
+        elif status == "indicative":
             problems.append(
                 f"{column} is indicative and is published as {column}{indicative_suffix}"
             )
-    blocked_ids = [metric_id for metric_id, card in by_id.items() if card["status"] == "bloqueada"]
+    blocked_ids = [metric_id for metric_id, card in by_id.items() if card["status"] == "blocked"]
     leaked = [metric_id for metric_id in blocked_ids if metric_id in set(measure_columns)]
     for metric_id in leaked:
         message = f"{metric_id} is blocked and stays unpublished"

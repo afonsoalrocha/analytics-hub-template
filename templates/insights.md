@@ -1,4 +1,4 @@
-# Insights — demand NNN
+# Insights — request NNN
 
 ## Recommendation
 

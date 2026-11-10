@@ -3,13 +3,14 @@ export DUCKDB_PATH := $(CURDIR)/data/warehouse.duckdb
 export DBT_PROFILES_DIR := $(CURDIR)/dbt
 export PYTHONPATH := $(CURDIR)/scripts
 
-.PHONY: help setup data demo demo-synthetic demo-olist dbt-build publish verify test lint sqlfluff leak-scan render ci
+.PHONY: help setup data demo demo-synthetic demo-olist dbt-build publish verify test lint sqlfluff leak-scan language render ci
 
 help:
-	@echo "make demo              Download the Olist sample, or fall back to the synthetic seed, and close demand 001."
+	@echo "make demo              Download the Olist sample, or fall back to the synthetic seed, and close request 001."
 	@echo "make demo-synthetic    Same path, forced offline."
 	@echo "make demo-olist        Same path, download required."
 	@echo "make test              pytest"
+	@echo "make language          Fail if Portuguese tokens appear outside the translation and the license."
 	@echo "make ci                lint, tests, dbt build, leak scan"
 
 setup:
@@ -23,11 +24,11 @@ dbt-build:
 	dbt build --project-dir dbt --profiles-dir dbt
 
 publish:
-	$(PYTHON) scripts/run_demand.py
-	$(PYTHON) automacoes/fechamento-mensal/run.py
+	$(PYTHON) scripts/run_request.py
+	$(PYTHON) automations/monthly-close/run.py
 
 verify:
-	$(PYTHON) verificacoes-rapidas/2018-08-20-participacao-do-frete/check.py
+	$(PYTHON) quick-checks/2018-08-20-freight-share/check.py
 	$(PYTHON) scripts/render_metrics.py --check
 	$(PYTHON) scripts/render_skills.py --check
 	$(PYTHON) scripts/validate_structure.py
@@ -51,6 +52,10 @@ lint:
 	$(PYTHON) scripts/render_skills.py --check
 	$(PYTHON) scripts/render_metrics.py --check
 	$(PYTHON) scripts/validate_structure.py
+	$(PYTHON) scripts/check_language.py
+
+language:
+	$(PYTHON) scripts/check_language.py
 
 sqlfluff:
 	mkdir -p data

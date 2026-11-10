@@ -1,8 +1,8 @@
 """Check the repository shape.
 
 The script checks required folders and files, registry and catalog
-consistency, demand documents, product assets, automation invariants, the
-generated skills catalog, and a token-free ``.mcp.json``. A demand whose
+consistency, request documents, product assets, automation invariants, the
+generated skills catalog, and a token-free ``.mcp.json``. A request whose
 completion label is ``blocked`` fails the check. ``partial`` stays green,
 because a warning is part of the review and a fresh checkout has no gate
 report.
@@ -25,19 +25,19 @@ from render_skills import drift
 from validate_completion import assess
 
 REQUIRED_DIRS = (
-    "demandas",
-    "verificacoes-rapidas",
-    "conhecimento",
-    "conhecimento/metricas",
-    "conhecimento/conceitos",
-    "produtos",
-    "automacoes",
+    "requests",
+    "quick-checks",
+    "knowledge",
+    "knowledge/metrics",
+    "knowledge/concepts",
+    "products",
+    "automations",
     "dbt",
     "dbt/models",
     "scripts/connectors",
     "scripts/gates",
     "templates",
-    "templates/produto",
+    "templates/product",
     "tests",
     ".claude/skills",
     ".claude/hooks",
@@ -56,31 +56,32 @@ REQUIRED_FILES = (
     ".mcp.json",
     ".claude/settings.json",
     ".claude/hooks/guard_paths.py",
-    "demandas/registro.yaml",
+    "requests/registry.yaml",
     ".github/workflows/ci.yml",
     "scripts/validate_structure.py",
     "scripts/validate_completion.py",
     "scripts/render_skills.py",
     "scripts/mcp_wrapper.py",
-    "scripts/demand_worktree.py",
-    "templates/produto/asset.yaml",
-    "templates/produto/CHANGELOG.md",
+    "scripts/request_worktree.py",
+    "scripts/check_language.py",
+    "templates/product/asset.yaml",
+    "templates/product/CHANGELOG.md",
 )
 GITIGNORE_SNIPPETS = (
     "*.duckdb",
     "*.parquet",
     "*.xlsx",
     "logs/",
-    "demandas/**/outputs/",
-    "automacoes/**/snapshots/",
+    "requests/**/outputs/",
+    "automations/**/snapshots/",
     "dbt/target/",
 )
 ASSET_FIELDS = ("id", "name", "owner_role", "status", "sources", "refresh", "sla")
-ASSET_STATUS = {"certificada", "indicativa", "bloqueada"}
+ASSET_STATUS = {"certified", "indicative", "blocked"}
 ZERO_LLM = "Zero language-model calls at runtime."
 LLM_IMPORT = re.compile(r"(?m)^\s*(?:import|from)\s+(openai|anthropic|litellm|langchain|cohere)\b")
 LLM_HOSTS = ("api.openai.com", "api.anthropic.com")
-DEMAND_DIR = re.compile(r"\d{3}-.+")
+REQUEST_DIR = re.compile(r"\d{3}-.+")
 
 
 def validate_structure(root: Path = ROOT) -> list[str]:
@@ -92,7 +93,7 @@ def validate_structure(root: Path = ROOT) -> list[str]:
         if not (root / relative).is_file():
             problems.append(f"Missing file {relative}.")
     problems.extend(validate_registry(root))
-    problems.extend(_demand_folders(root))
+    problems.extend(_request_folders(root))
     problems.extend(validate_catalog(root))
     problems.extend(check_cards(root))
     problems.extend(drift(root))
@@ -106,25 +107,25 @@ def validate_structure(root: Path = ROOT) -> list[str]:
     return problems
 
 
-def _demand_folders(root: Path) -> list[str]:
+def _request_folders(root: Path) -> list[str]:
     try:
         document = load_registry(root)
     except (OSError, yaml.YAMLError, ValueError) as exc:
         return [str(exc)]
-    demands = document.get("demands")
-    if not isinstance(demands, list):
+    requests = document.get("requests")
+    if not isinstance(requests, list):
         return []
     registered = {
-        f"{item.get('id')}-{item.get('slug')}" for item in demands if isinstance(item, dict)
+        f"{item.get('id')}-{item.get('slug')}" for item in requests if isinstance(item, dict)
     }
     folders = {
         path.name
-        for path in (root / "demandas").iterdir()
-        if path.is_dir() and DEMAND_DIR.fullmatch(path.name)
+        for path in (root / "requests").iterdir()
+        if path.is_dir() and REQUEST_DIR.fullmatch(path.name)
     }
     problems = []
     for name in sorted(folders - registered):
-        problems.append(f"Demand folder {name} is missing from registro.yaml.")
+        problems.append(f"Request folder {name} is missing from registry.yaml.")
     for name in sorted(registered - folders):
         problems.append(f"Registry entry {name} has no folder.")
     return problems
@@ -132,11 +133,11 @@ def _demand_folders(root: Path) -> list[str]:
 
 def _products(root: Path) -> list[str]:
     problems: list[str] = []
-    base = root / "produtos"
+    base = root / "products"
     if not base.is_dir():
         return problems
     for path in sorted(item for item in base.iterdir() if item.is_dir()):
-        for name in ("asset.yaml", "CHANGELOG.md", "contrato.md"):
+        for name in ("asset.yaml", "CHANGELOG.md", "contract.md"):
             if not (path / name).is_file():
                 problems.append(f"{path.name}: missing {name}.")
         asset_path = path / "asset.yaml"
@@ -162,7 +163,7 @@ def _asset(folder: str, path: Path) -> list[str]:
     if str(document.get("id")) != folder:
         problems.append(f"{folder}: asset id must match the directory name.")
     if document.get("status") not in ASSET_STATUS:
-        problems.append(f"{folder}: asset status must be certificada, indicativa, or bloqueada.")
+        problems.append(f"{folder}: asset status must be certified, indicative, or blocked.")
     sources = document.get("sources")
     sources_ok = isinstance(sources, list) and bool(sources)
     sources_ok = sources_ok and all(isinstance(item, str) and item for item in sources or [])
@@ -176,7 +177,7 @@ def _asset(folder: str, path: Path) -> list[str]:
 
 def _automations(root: Path) -> list[str]:
     problems: list[str] = []
-    base = root / "automacoes"
+    base = root / "automations"
     if not base.is_dir():
         return problems
     for path in sorted(item for item in base.iterdir() if item.is_dir()):
@@ -204,11 +205,11 @@ def _automations(root: Path) -> list[str]:
 
 def _quick_checks(root: Path) -> list[str]:
     problems = []
-    base = root / "verificacoes-rapidas"
+    base = root / "quick-checks"
     if not base.is_dir():
         return problems
     for path in sorted(item for item in base.iterdir() if item.is_dir()):
-        for name in ("notas.md", "check.py"):
+        for name in ("notes.md", "check.py"):
             if not (path / name).is_file():
                 problems.append(f"{path.name}: missing {name}.")
     return problems
@@ -239,18 +240,18 @@ def _completion(root: Path) -> list[str]:
         document = load_registry(root)
     except (OSError, yaml.YAMLError, ValueError):
         return []
-    demands = document.get("demands")
-    if not isinstance(demands, list):
+    requests = document.get("requests")
+    if not isinstance(requests, list):
         return []
     problems = []
-    for item in demands:
+    for item in requests:
         if not isinstance(item, dict):
             continue
-        demand_id = str(item.get("id"))
-        result = assess(root, demand_id, closing=False)
+        request_id = str(item.get("id"))
+        result = assess(root, request_id, closing=False)
         if result.label == "blocked":
             detail = "; ".join(result.notes)
-            problems.append(f"{demand_id}: completion is blocked ({detail}).")
+            problems.append(f"{request_id}: completion is blocked ({detail}).")
     return problems
 
 

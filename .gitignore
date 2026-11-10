@@ -14,8 +14,8 @@ dbt/logs/
 dbt/.user.yml
 *.duckdb
 *.duckdb.wal
-demandas/**/outputs/
-automacoes/**/snapshots/
+requests/**/outputs/
+automations/**/snapshots/
 *.partial
 *.tmp
 *.parquet

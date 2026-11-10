@@ -1,0 +1,25 @@
+version: 1
+requests:
+  - id: "001"
+    slug: monthly-conversion-and-revenue
+    title: Monthly delivered orders, revenue, and the conversion question
+    path: requests/001-monthly-conversion-and-revenue
+    status: closed
+    requester_role: analytics lead
+    opened_on: 2026-11-10
+    transitions:
+      - "on": "2026-11-10"
+        to: open
+        reason: The showcase question was accepted into the request registry.
+      - "on": "2026-11-10"
+        to: in_spec
+        reason: The human wrote the metrics, the grain, the period rule, and the acceptance gates.
+      - "on": "2026-11-10"
+        to: in_build
+        reason: The agent implemented the dbt models, the audit views, and the gate runner.
+      - "on": "2026-11-10"
+        to: in_interpretation
+        reason: The gates passed with the variation warning left for the human to read.
+      - "on": "2026-11-10"
+        to: closed
+        reason: The insight log was accepted and the request is the worked example in this template.

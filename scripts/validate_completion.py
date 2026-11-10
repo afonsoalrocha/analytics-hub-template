@@ -1,9 +1,12 @@
-"""Label a demand ok, partial, or blocked before it is closed.
+"""Label a request complete, partial, or blocked before it is closed.
 
-``ok`` means the documents agree and no gate warning or block is on disk.
+``complete`` means the documents agree and no gate warning or block is on disk.
 ``partial`` means the documents can close after the human records a warning.
-``blocked`` means the close stops. A missing gate report is normal in a
+``blocked`` means the close stops. Closing a paused request is blocked: a
+paused request cannot carry an outcome. A missing gate report is normal in a
 fresh checkout, because publication files stay out of git.
+
+The label is a closing outcome. It is not a lifecycle status.
 """
 
 from __future__ import annotations
@@ -48,7 +51,7 @@ class Completion:
     notes: tuple[str, ...]
 
 
-def assess(root: Path, demand_id: str, *, closing: bool) -> Completion:
+def assess(root: Path, request_id: str, *, closing: bool) -> Completion:
     blocked: list[str] = []
     partial: list[str] = []
 
@@ -63,90 +66,95 @@ def assess(root: Path, demand_id: str, *, closing: bool) -> Completion:
     except (OSError, yaml.YAMLError, ValueError) as exc:
         return Completion("blocked", (str(exc),))
 
-    entry = _entry(document, demand_id)
+    entry = _entry(document, request_id)
     if entry is None:
-        return Completion("blocked", (f"{demand_id}: missing from registro.yaml.",))
+        return Completion("blocked", (f"{request_id}: missing from registry.yaml.",))
+    if closing and str(entry.get("status")) == "paused":
+        return Completion(
+            "blocked",
+            (f"{request_id}: a paused request cannot carry an outcome.",),
+        )
 
     slug = str(entry.get("slug"))
-    folder = root / "demandas" / f"{demand_id}-{slug}"
+    folder = root / "requests" / f"{request_id}-{slug}"
     if root / str(entry.get("path")) != folder:
-        block(f"{demand_id}: path must be demandas/{demand_id}-{slug}.")
+        block(f"{request_id}: path must be requests/{request_id}-{slug}.")
     if not folder.is_dir():
-        block(f"{demand_id}: folder is missing.")
+        block(f"{request_id}: folder is missing.")
         return Completion("blocked", tuple(blocked))
 
-    config = _config(folder, demand_id, block)
-    _readme(folder, demand_id, block)
+    config = _config(folder, request_id, block)
+    _readme(folder, request_id, block)
     _insights(
         folder,
-        demand_id,
+        request_id,
         status=str(entry.get("status")),
         closing=closing,
         block=block,
         warn=warn,
     )
-    _gate_report(folder, demand_id, config, block, warn)
+    _gate_report(folder, request_id, config, block, warn)
 
     if blocked:
         return Completion("blocked", tuple(blocked + partial))
     if partial:
         return Completion("partial", tuple(partial))
-    return Completion("ok", ())
+    return Completion("complete", ())
 
 
-def _entry(document: dict[str, object], demand_id: str) -> dict[str, object] | None:
-    demands = document.get("demands")
-    if not isinstance(demands, list):
+def _entry(document: dict[str, object], request_id: str) -> dict[str, object] | None:
+    requests = document.get("requests")
+    if not isinstance(requests, list):
         return None
-    for item in demands:
-        if isinstance(item, dict) and str(item.get("id")) == demand_id:
+    for item in requests:
+        if isinstance(item, dict) and str(item.get("id")) == request_id:
             return item
     return None
 
 
-def _config(folder: Path, demand_id: str, block) -> dict[str, object] | None:
+def _config(folder: Path, request_id: str, block) -> dict[str, object] | None:
     path = folder / "config.yaml"
     if not path.is_file():
-        block(f"{demand_id}: config.yaml is missing.")
+        block(f"{request_id}: config.yaml is missing.")
         return None
     try:
         config = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
-        block(f"{demand_id}: config.yaml is not valid YAML ({exc}).")
+        block(f"{request_id}: config.yaml is not valid YAML ({exc}).")
         return None
     if not isinstance(config, dict):
-        block(f"{demand_id}: config.yaml must be a mapping.")
+        block(f"{request_id}: config.yaml must be a mapping.")
         return None
-    if str(config.get("demand_id")) != demand_id:
-        block(f"{demand_id}: config.yaml demand_id does not match.")
+    if str(config.get("request_id")) != request_id:
+        block(f"{request_id}: config.yaml request_id does not match.")
     return config
 
 
-def _readme(folder: Path, demand_id: str, block) -> None:
+def _readme(folder: Path, request_id: str, block) -> None:
     path = folder / "README.md"
     if not path.is_file():
-        block(f"{demand_id}: README.md is missing.")
+        block(f"{request_id}: README.md is missing.")
         return
     text = path.read_text(encoding="utf-8")
     for heading in README_HEADINGS:
         if f"## {heading}" not in text:
-            block(f"{demand_id}: README is missing heading {heading}.")
+            block(f"{request_id}: README is missing heading {heading}.")
     for target in _relative_links(text):
         if not (path.parent / target).resolve().is_file():
-            block(f"{demand_id}: README links to missing {target}.")
+            block(f"{request_id}: README links to missing {target}.")
 
 
-def _insights(folder: Path, demand_id: str, *, status: str, closing: bool, block, warn) -> None:
-    hard = closing or status == "fechada"
+def _insights(folder: Path, request_id: str, *, status: str, closing: bool, block, warn) -> None:
+    hard = closing or status == "closed"
     path = folder / "insights.md"
     if not path.is_file():
-        _severity(f"{demand_id}: insights.md is missing.", hard=hard, block=block, warn=warn)
+        _severity(f"{request_id}: insights.md is missing.", hard=hard, block=block, warn=warn)
         return
     text = path.read_text(encoding="utf-8")
     for heading in INSIGHT_HEADINGS:
         if f"## {heading}" not in text:
             _severity(
-                f"{demand_id}: insights.md is missing heading {heading}.",
+                f"{request_id}: insights.md is missing heading {heading}.",
                 hard=hard,
                 block=block,
                 warn=warn,
@@ -154,7 +162,7 @@ def _insights(folder: Path, demand_id: str, *, status: str, closing: bool, block
     revision = text.find("## Revision log")
     if revision >= 0 and "### " not in text[revision:]:
         _severity(
-            f"{demand_id}: revision log has no dated entry.",
+            f"{request_id}: revision log has no dated entry.",
             hard=hard,
             block=block,
             warn=warn,
@@ -163,7 +171,7 @@ def _insights(folder: Path, demand_id: str, *, status: str, closing: bool, block
 
 def _gate_report(
     folder: Path,
-    demand_id: str,
+    request_id: str,
     config: dict[str, object] | None,
     block,
     warn,
@@ -179,17 +187,17 @@ def _gate_report(
     try:
         report = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        block(f"{demand_id}: gate report is not valid JSON.")
+        block(f"{request_id}: gate report is not valid JSON.")
         return
     results = report.get("results") if isinstance(report, dict) else None
     if not isinstance(results, list):
-        block(f"{demand_id}: gate report has no results list.")
+        block(f"{request_id}: gate report has no results list.")
         return
     states = [item.get("state") for item in results if isinstance(item, dict)]
     if any(state == "block" for state in states):
-        block(f"{demand_id}: a gate report contains a block.")
+        block(f"{request_id}: a gate report contains a block.")
     elif any(state == "warn" for state in states):
-        warn(f"{demand_id}: a gate report contains a warning.")
+        warn(f"{request_id}: a gate report contains a warning.")
 
 
 def _severity(message: str, *, hard: bool, block, warn) -> None:
@@ -210,15 +218,15 @@ def _relative_links(text: str) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Label a demand before closing it.")
-    parser.add_argument("--demand", required=True)
+    parser = argparse.ArgumentParser(description="Label a request before closing it.")
+    parser.add_argument("--request", required=True)
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args(argv)
-    result = assess(args.root, args.demand, closing=True)
+    result = assess(args.root, args.request, closing=True)
     print(result.label)
     for note in result.notes:
         print(f"- {note}")
-    if result.label == "ok":
+    if result.label == "complete":
         return 0
     if result.label == "partial":
         return 2

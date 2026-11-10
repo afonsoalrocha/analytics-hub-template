@@ -11,7 +11,7 @@ from jsonschema import Draft202012Validator
 
 from paths import ROOT
 
-STATUSES = ("certificada", "indicativa", "bloqueada")
+STATUSES = ("certified", "indicative", "blocked")
 
 METRIC_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -89,7 +89,7 @@ METRIC_SCHEMA: dict[str, Any] = {
     },
     "allOf": [
         {
-            "if": {"properties": {"status": {"const": "bloqueada"}}, "required": ["status"]},
+            "if": {"properties": {"status": {"const": "blocked"}}, "required": ["status"]},
             "then": {"properties": {"block_reason": {"type": "string", "minLength": 10}}},
             "else": {"properties": {"block_reason": {"type": "null"}}},
         }
@@ -100,7 +100,7 @@ VALIDATOR = Draft202012Validator(METRIC_SCHEMA)
 
 
 def metric_dir(root: Path = ROOT) -> Path:
-    return root / "conhecimento" / "metricas"
+    return root / "knowledge" / "metrics"
 
 
 def load_cards(root: Path = ROOT) -> list[dict[str, Any]]:
@@ -177,19 +177,19 @@ def validate_catalog(root: Path = ROOT) -> list[str]:
         if metric_id in seen:
             problems.append(f"{path.name}: duplicate id {metric_id}")
         seen.add(metric_id)
-    index_path = root / "conhecimento" / "index.yaml"
+    index_path = root / "knowledge" / "index.yaml"
     index = yaml.safe_load(index_path.read_text(encoding="utf-8"))
     listed = index.get("metrics", []) if isinstance(index, dict) else []
     listed_ids = [item.get("id") for item in listed if isinstance(item, dict)]
     if sorted(listed_ids) != sorted(seen):
-        problems.append("conhecimento/index.yaml metric ids must match the metric card files.")
+        problems.append("knowledge/index.yaml metric ids must match the metric card files.")
     for item in listed:
         if not isinstance(item, dict):
             continue
         relative = item.get("path")
-        if relative != f"conhecimento/metricas/{item.get('id')}.yaml":
+        if relative != f"knowledge/metrics/{item.get('id')}.yaml":
             problems.append(f"index path for {item.get('id')} must point at its YAML card.")
-        markdown = root / "conhecimento" / "metricas" / f"{item.get('id')}.md"
+        markdown = root / "knowledge" / "metrics" / f"{item.get('id')}.md"
         if not markdown.is_file():
             problems.append(f"missing rendered card {markdown.name}")
     return problems
