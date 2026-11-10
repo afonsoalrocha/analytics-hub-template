@@ -1,9 +1,11 @@
 """Load the Olist public extract, or the synthetic fallback, into local DuckDB.
 
-The Olist files are downloaded at runtime and are not committed. The Kaggle
-release is CC BY-NC-SA 4.0. This script reads the CSV sample published by
-Olist at https://github.com/olist/work-at-olist-data and keeps the four
-tables the example uses.
+The Olist files are downloaded at runtime and are not committed. The canonical
+license is CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/):
+NonCommercial (no commercial use) and ShareAlike. The download mirror
+https://github.com/olist/work-at-olist-data declares MIT on GitHub and is used
+only as the file source. Treat the CSVs under the Kaggle license, which is
+separate from the MIT license of this template. The script keeps four tables.
 """
 
 from __future__ import annotations
