@@ -14,18 +14,18 @@ from paths import ROOT
 def render_card(card: dict[str, Any]) -> str:
     status = str(card["status"])
     lines = [f"# {card['name']}", "", f"- id: `{card['id']}`", f"- status: `{status}`", ""]
-    if status == "indicativa":
+    if status == "indicative":
         lines.extend(
             [
-                "> **Indicativo.** Publish this figure with the `_indicativo` suffix "
+                "> **Indicative.** Publish this figure with the `_indicative` suffix "
                 "and with its maturity window.",
                 "",
             ]
         )
-    elif status == "bloqueada":
+    elif status == "blocked":
         lines.extend(
             [
-                "> **Bloqueada.** This metric stays unpublished.",
+                "> **Blocked.** This metric stays unpublished.",
                 "",
                 str(card["block_reason"]).strip(),
                 "",

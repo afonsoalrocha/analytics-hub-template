@@ -41,6 +41,6 @@ select
     count(*) as mature_customers,
     count(*) filter (where mature.delivered_orders >= 2) as repurchasing_customers,
     count(*) filter (where mature.delivered_orders >= 2) * 1.0
-    / count(*) as repurchase_rate_indicativo
+    / count(*) as repurchase_rate_indicative
 from mature
 group by mature.cohort_month

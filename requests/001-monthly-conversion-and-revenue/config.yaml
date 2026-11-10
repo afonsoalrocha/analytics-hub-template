@@ -1,0 +1,25 @@
+request_id: "001"
+slug: monthly-conversion-and-revenue
+variation_threshold: 0.5
+variation_column: delivered_orders
+reconciliation_tolerance: 0.005
+maturity_days: 90
+indicative_suffix: "_indicative"
+filters:
+  - "order_status = 'delivered'"
+  - "complete calendar months only"
+units:
+  delivered_orders: orders
+  product_revenue: BRL
+  average_ticket: BRL
+certified_metrics:
+  - delivered_orders
+  - product_revenue
+  - average_ticket
+blocked_metrics:
+  - visit_to_order_conversion
+outputs:
+  monthly: outputs/monthly_commerce.csv
+  repurchase: outputs/repurchase_by_cohort.csv
+  publication: outputs/publication.json
+  gate_report: outputs/gate_report.json

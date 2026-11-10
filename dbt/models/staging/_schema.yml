@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_orders
-    description: Typed orders. purchase_month is the demand clock.
+    description: Typed orders. purchase_month is the clock for a request.
     columns:
       - name: order_id
         tests:

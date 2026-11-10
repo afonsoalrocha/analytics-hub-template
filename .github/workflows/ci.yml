@@ -37,6 +37,7 @@ jobs:
           python scripts/render_skills.py --check
           python scripts/render_metrics.py --check
           python scripts/validate_structure.py
+          python scripts/check_language.py
 
   test:
     name: pytest
@@ -62,13 +63,13 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: synthetic warehouse, dbt build, demand close
+      - name: synthetic warehouse, dbt build, request close
         run: |
           python scripts/prepare_data.py --mode synthetic
           dbt build --project-dir dbt --profiles-dir dbt
-          python scripts/run_demand.py
-          python automacoes/fechamento-mensal/run.py
-          python verificacoes-rapidas/2018-08-20-participacao-do-frete/check.py
+          python scripts/run_request.py
+          python automations/monthly-close/run.py
+          python quick-checks/2018-08-20-freight-share/check.py
 
   leak:
     name: leak gate

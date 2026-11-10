@@ -4,7 +4,7 @@ models:
   - name: mart_monthly_commerce
     description: >
       Certified monthly commerce mart. Grain is purchase_month for closed,
-      fully covered months. See conhecimento/metricas.
+      fully covered months. See knowledge/metrics.
     columns:
       - name: purchase_month
         tests:
@@ -22,12 +22,12 @@ models:
   - name: mart_repurchase_by_cohort
     description: >
       Indicative repurchase rate by first-purchase cohort. The rate column
-      keeps the _indicativo suffix.
+      keeps the _indicative suffix.
     columns:
       - name: cohort_month
         tests:
           - unique
           - not_null
-      - name: repurchase_rate_indicativo
+      - name: repurchase_rate_indicative
         tests:
           - not_null

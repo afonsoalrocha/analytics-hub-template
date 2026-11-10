@@ -12,37 +12,37 @@ def test_metric_catalog_matches_the_index_and_the_schema():
     assert validate_catalog(ROOT) == []
 
 
-def test_registry_matches_the_demand_folder():
+def test_registry_matches_the_request_folder():
     assert validate_registry(ROOT) == []
 
 
 def test_knowledge_topics_exist():
-    index = yaml.safe_load((ROOT / "conhecimento" / "index.yaml").read_text(encoding="utf-8"))
+    index = yaml.safe_load((ROOT / "knowledge" / "index.yaml").read_text(encoding="utf-8"))
     for topic in index["topics"]:
         assert (ROOT / topic["path"]).is_file()
 
 
 def test_maturity_window_has_one_value():
     card = yaml.safe_load(
-        (ROOT / "conhecimento" / "metricas" / "repurchase_rate.yaml").read_text(encoding="utf-8")
+        (ROOT / "knowledge" / "metrics" / "repurchase_rate.yaml").read_text(encoding="utf-8")
     )
-    demand = yaml.safe_load(
-        (ROOT / "demandas" / "001-conversao-e-receita-mensal" / "config.yaml").read_text(
+    request = yaml.safe_load(
+        (ROOT / "requests" / "001-monthly-conversion-and-revenue" / "config.yaml").read_text(
             encoding="utf-8"
         )
     )
     project = yaml.safe_load((ROOT / "dbt" / "dbt_project.yml").read_text(encoding="utf-8"))
     assert card["maturity_days"] == 90
-    assert demand["maturity_days"] == 90
+    assert request["maturity_days"] == 90
     assert project["vars"]["repurchase_maturity_days"] == 90
 
 
-def test_demand_readme_states_the_gate_thresholds():
-    text = (ROOT / "demandas" / "001-conversao-e-receita-mensal" / "README.md").read_text(
+def test_request_readme_states_the_gate_thresholds():
+    text = (ROOT / "requests" / "001-monthly-conversion-and-revenue" / "README.md").read_text(
         encoding="utf-8"
     )
     config = yaml.safe_load(
-        (ROOT / "demandas" / "001-conversao-e-receita-mensal" / "config.yaml").read_text(
+        (ROOT / "requests" / "001-monthly-conversion-and-revenue" / "config.yaml").read_text(
             encoding="utf-8"
         )
     )
@@ -57,5 +57,5 @@ def test_demand_readme_states_the_gate_thresholds():
         "repurchase_rate.md",
         "visit_to_order_conversion.md",
     ):
-        assert (ROOT / "conhecimento" / "metricas" / name).is_file()
+        assert (ROOT / "knowledge" / "metrics" / name).is_file()
         assert name in text

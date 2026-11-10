@@ -26,13 +26,13 @@ def normalize_repurchase(frame: pd.DataFrame) -> pd.DataFrame:
     )
     normalized["mature_customers"] = normalized["mature_customers"].astype(int)
     normalized["repurchasing_customers"] = normalized["repurchasing_customers"].astype(int)
-    normalized["repurchase_rate_indicativo"] = (
-        normalized["repurchase_rate_indicativo"].astype(float).round(6)
+    normalized["repurchase_rate_indicative"] = (
+        normalized["repurchase_rate_indicative"].astype(float).round(6)
     )
     columns = [
         "cohort_month",
         "mature_customers",
         "repurchasing_customers",
-        "repurchase_rate_indicativo",
+        "repurchase_rate_indicative",
     ]
     return normalized.loc[:, columns].sort_values("cohort_month").reset_index(drop=True)

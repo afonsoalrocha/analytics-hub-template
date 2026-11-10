@@ -129,26 +129,26 @@ def test_frozen_history_blocks_a_rewrite_and_allows_the_first_close():
 
 def test_metric_status_rejects_a_blocked_column_and_a_bare_indicative_name():
     catalog = [
-        {"id": "delivered_orders", "status": "certificada"},
-        {"id": "repurchase_rate", "status": "indicativa"},
-        {"id": "visit_to_order_conversion", "status": "bloqueada"},
+        {"id": "delivered_orders", "status": "certified"},
+        {"id": "repurchase_rate", "status": "indicative"},
+        {"id": "visit_to_order_conversion", "status": "blocked"},
     ]
     blocked = check_metric_status(
         ["delivered_orders", "visit_to_order_conversion"],
         catalog,
-        indicative_suffix="_indicativo",
+        indicative_suffix="_indicative",
     )
     assert blocked.blocking
     bare = check_metric_status(
         ["repurchase_rate"],
         catalog,
-        indicative_suffix="_indicativo",
+        indicative_suffix="_indicative",
     )
     assert bare.blocking
     clean = check_metric_status(
-        ["delivered_orders", "repurchase_rate_indicativo"],
+        ["delivered_orders", "repurchase_rate_indicative"],
         catalog,
-        indicative_suffix="_indicativo",
+        indicative_suffix="_indicative",
     )
     assert clean.passed
 

@@ -1,0 +1,33 @@
+id: product_revenue
+name: Product revenue
+status: certified
+definition: >
+  Sum of item price for delivered orders, in the month of the purchase.
+  Freight is excluded.
+formula:
+  numerator: sum(price)
+  denominator: null
+  aggregation: sum
+grain: order item rolled up to purchase_month
+default_date_column: order_purchase_timestamp
+required_filters:
+  - order_status = 'delivered'
+  - complete calendar months only
+allowed_dimensions:
+  - name: purchase_month
+    caution: ""
+  - name: customer_state
+    caution: >
+      State cuts get thin quickly. Rank a state only when the order count
+      is large enough for the decision in front of you.
+maturity_days: 0
+reconciliation_source: >
+  Sum of payment_value on the same delivered orders. Payments are the
+  independent source. They are expected to sit close to price plus freight,
+  which is a different total from product revenue on purpose.
+owner: template maintainer
+decided_at: 2026-11-10
+block_reason: null
+history:
+  - "on": "2026-11-10"
+    change: Initial definition for the public Olist example. Freight stays out of product revenue.

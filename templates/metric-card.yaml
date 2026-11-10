@@ -1,6 +1,6 @@
 id: metric_id
 name: Business name
-status: certificada
+status: certified
 definition: One sentence a colleague outside the data team can repeat.
 formula:
   numerator: count(distinct order_id)
@@ -21,6 +21,6 @@ block_reason: null
 history:
   - "on": "2026-11-10"
     change: Initial definition.
-# status is one of certificada, indicativa, bloqueada.
-# block_reason is a sentence when status is bloqueada, and null otherwise.
-# Indicative metrics are published with the _indicativo suffix.
+# status is one of certified, indicative, blocked.
+# block_reason is a sentence when status is blocked, and null otherwise.
+# Indicative metrics are published with the _indicative suffix.

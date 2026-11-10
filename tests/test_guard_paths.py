@@ -34,9 +34,9 @@ def test_hook_blocks_dotenv_and_temp_paths():
 def test_hook_forces_the_project_venv():
     guard = _guard()
     blocked = [
-        "python scripts/run_demand.py",
+        "python scripts/run_request.py",
         "python3 -m pytest",
-        "venv/bin/python scripts/run_demand.py",
+        "venv/bin/python scripts/run_request.py",
         "pip install -r requirements.txt",
         "cat .env",
         "source .env",
@@ -45,7 +45,7 @@ def test_hook_forces_the_project_venv():
         allowed, _ = guard.evaluate("Bash", {"command": command})
         assert not allowed, command
     allowed = [
-        ".venv/bin/python scripts/run_demand.py",
+        ".venv/bin/python scripts/run_request.py",
         "/workspace/.venv/bin/pytest",
         "python3 -m venv .venv",
         "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
