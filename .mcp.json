@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
-      "description": "Local repository files. Read them to implement a demand. Do not use a write tool to bypass a gate, and do not point this at a production warehouse."
+      "command": "python3",
+      "args": ["scripts/mcp_wrapper.py", "filesystem"],
+      "description": "Local repository files. The wrapper reads MCP_FILESYSTEM_ROOT and an optional OAuth read-only profile outside the repo. This file holds no credentials."
     }
   }
 }

@@ -20,7 +20,7 @@ data:
 
 dbt-build:
 	mkdir -p data
-	$(PYTHON) -m dbt build --project-dir dbt --profiles-dir dbt
+	dbt build --project-dir dbt --profiles-dir dbt
 
 publish:
 	$(PYTHON) scripts/run_demand.py
@@ -29,6 +29,8 @@ publish:
 verify:
 	$(PYTHON) verificacoes-rapidas/2018-08-20-participacao-do-frete/check.py
 	$(PYTHON) scripts/render_metrics.py --check
+	$(PYTHON) scripts/render_skills.py --check
+	$(PYTHON) scripts/validate_structure.py
 
 demo: data dbt-build publish verify
 
@@ -46,6 +48,9 @@ test:
 lint:
 	$(PYTHON) -m ruff check .
 	$(PYTHON) -m ruff format --check .
+	$(PYTHON) scripts/render_skills.py --check
+	$(PYTHON) scripts/render_metrics.py --check
+	$(PYTHON) scripts/validate_structure.py
 
 sqlfluff:
 	mkdir -p data

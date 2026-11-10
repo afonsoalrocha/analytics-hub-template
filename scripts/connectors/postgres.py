@@ -13,12 +13,14 @@ import psycopg
 
 from connectors.base import Connector, ConnectorError
 from connectors.env import env_int, require_env
+from connectors.policy import Policy, apply_sql, load_policy
 
 ALLOWED_SSL_MODES = frozenset({"verify-full", "verify-ca"})
 
 
 class PostgresConnector(Connector):
-    def __init__(self) -> None:
+    def __init__(self, policy: Policy | None = None) -> None:
+        self.policy = policy or load_policy()
         sslmode = os_sslmode()
         timeout = env_int("POSTGRES_CONNECT_TIMEOUT_SECONDS", 10)
         self._connection = psycopg.connect(
@@ -32,6 +34,12 @@ class PostgresConnector(Connector):
         )
 
     def query(self, sql: str, params: dict[str, object] | None = None) -> pd.DataFrame:
+        preview = apply_sql(self.policy, sql, engine="postgres")
+        if preview is not None:
+            return preview
+        return self._query(sql, params)
+
+    def _query(self, sql: str, params: dict[str, object] | None) -> pd.DataFrame:
         with self._connection.cursor() as cursor:
             cursor.execute(sql, params)
             if cursor.description is None:
@@ -40,8 +48,19 @@ class PostgresConnector(Connector):
             rows = cursor.fetchall()
         return pd.DataFrame(rows, columns=columns)
 
+    def identity(self) -> dict[str, str]:
+        frame = self._query(
+            "select current_user as user_name, current_database() as database_name",
+            None,
+        )
+        return {
+            "engine": "postgres",
+            "user_name": str(frame["user_name"].iloc[0]),
+            "database_name": str(frame["database_name"].iloc[0]),
+        }
+
     def healthcheck(self) -> bool:
-        frame = self.query("select 1 as ok")
+        frame = self._query("select 1 as ok", None)
         return not frame.empty and int(frame["ok"].iloc[0]) == 1
 
     def close(self) -> None:

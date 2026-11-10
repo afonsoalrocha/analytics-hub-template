@@ -1,0 +1,10 @@
+id: comercio-mensal
+name: Monthly commerce mart
+owner_role: template maintainer
+status: certificada
+sources:
+  - raw.orders
+  - raw.order_items
+  - marts.mart_monthly_commerce
+refresh: Monthly append by automacoes/fechamento-mensal. A closed month stays frozen.
+sla: A certified answer is available after the gates pass. A block leaves the previous snapshot in place. A warning stays in the gate report.

@@ -8,12 +8,14 @@ from connectors.base import Connector, ConnectorError
 from connectors.env import env_float, env_int, require_env
 from connectors.google_auth import access_token
 from connectors.http import make_session, request
+from connectors.policy import Policy, apply_sql, load_policy
 
 API = "https://bigquery.googleapis.com/bigquery/v2"
 
 
 class BigQueryConnector(Connector):
-    def __init__(self, session: object | None = None) -> None:
+    def __init__(self, session: object | None = None, *, policy: Policy | None = None) -> None:
+        self.policy = policy or load_policy()
         self._project = require_env("BIGQUERY_PROJECT")
         self._timeout = env_float("BIGQUERY_TIMEOUT_SECONDS", 60)
         self._polls = env_int("BIGQUERY_MAX_POLLS", 10)
@@ -21,10 +23,14 @@ class BigQueryConnector(Connector):
         self._session = session or make_session()
 
     def query(self, sql: str, params: dict[str, object] | None = None) -> pd.DataFrame:
+        preview = apply_sql(self.policy, sql, engine="bigquery")
+        if preview is not None:
+            return preview
         body: dict[str, object] = {
             "query": sql,
             "useLegacySql": False,
             "timeoutMs": int(self._timeout * 1000),
+            "maximumBytesBilled": str(self.policy.max_bytes),
         }
         if params:
             body["parameterMode"] = "NAMED"
@@ -60,6 +66,18 @@ class BigQueryConnector(Connector):
             )
             payload = _json(response)
         raise ConnectorError("BigQuery query did not finish before the poll limit.")
+
+    def identity(self) -> dict[str, str]:
+        response = request(
+            self._session,
+            "GET",
+            f"{API}/projects/{self._project}",
+            timeout=self._timeout,
+            headers=self._headers(),
+        )
+        body = _json(response)
+        project = body.get("id") if isinstance(body.get("id"), str) else self._project
+        return {"engine": "bigquery", "project": str(project)}
 
     def healthcheck(self) -> bool:
         frame = self.query("select 1 as ok")

@@ -1,8 +1,10 @@
 """Common connector interface.
 
-Every warehouse connector exposes ``query``, ``healthcheck``, and a context
-manager that closes the connection. Credentials come from the environment.
-Remote calls use HTTPS and verify TLS certificates.
+Every warehouse connector exposes ``query``, ``identity``, ``healthcheck``,
+and a context manager that closes the connection. Credentials come from the
+environment. Remote calls use HTTPS and verify TLS certificates. ``query``
+is read-only unless the process opts in, and a dry-run returns before any
+network call.
 """
 
 from __future__ import annotations
@@ -23,6 +25,13 @@ class Connector(ABC):
 
         SQL warehouses receive SQL. The GA4 connector receives a JSON
         RunReport body. The Azure Blob connector receives a blob path.
+        """
+
+    @abstractmethod
+    def identity(self) -> dict[str, str]:
+        """Return the account, project, or database this connector is using.
+
+        The result carries no secret.
         """
 
     @abstractmethod

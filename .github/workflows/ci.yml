@@ -30,6 +30,13 @@ jobs:
         run: |
           mkdir -p data
           sqlfluff lint dbt/models dbt/tests
+      - name: generated catalogs and structure
+        env:
+          PYTHONPATH: ${{ github.workspace }}/scripts
+        run: |
+          python scripts/render_skills.py --check
+          python scripts/render_metrics.py --check
+          python scripts/validate_structure.py
 
   test:
     name: pytest

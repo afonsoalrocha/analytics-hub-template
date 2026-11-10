@@ -1,4 +1,8 @@
-"""Append the monthly commerce mart. A failed gate does not touch the snapshot."""
+"""Append the monthly commerce mart. A failed gate does not touch the snapshot.
+
+Zero language-model calls at runtime. This process reads the mart, runs the
+gates, and writes the snapshot.
+"""
 
 from __future__ import annotations
 
@@ -37,9 +41,7 @@ def main() -> int:
     snapshot = HERE / config["snapshot_path"]
     connection = duckdb.connect(str(database), read_only=True)
     try:
-        current = normalize_monthly(
-            connection.execute(f"select * from {relation}").df()
-        )
+        current = normalize_monthly(connection.execute(f"select * from {relation}").df())
         source_dates = [
             row[0]
             for row in connection.execute("select purchase_date from staging.stg_orders").fetchall()
