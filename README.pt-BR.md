@@ -1,8 +1,10 @@
 # Analytics Hub Template
 
+**Perguntas viram pedidos. Números ganham um status. Agentes implementam sob gates.**
+
 > **Tradução opcional.** Este arquivo traduz `README.md` para português. O inglês é o texto canônico: se os dois divergirem, vale `README.md`. Este é o único arquivo do repositório escrito em português.
 
-Um ambiente de trabalho para analistas em que cada pergunta de negócio vira uma demanda rastreável, cada número passa por um gate determinístico e cada interpretação fica registrada com histórico.
+Um ambiente de trabalho para analistas em que cada pergunta de negócio vira um pedido rastreável, cada número passa por um gate determinístico e cada interpretação fica registrada com histórico.
 
 O humano é dono da arquitetura, das definições de métrica, dos critérios de aceite e da leitura do resultado. O agente implementa o SQL, os testes e os scripts. O modelo de linguagem redige e pergunta. O warehouse calcula.
 
@@ -13,7 +15,7 @@ pip install -r requirements.txt
 make demo
 ```
 
-`make demo` baixa o extrato público de e-commerce da Olist quando consegue e, na falta dele, monta uma semente sintética com as mesmas tabelas. Em seguida roda o dbt em DuckDB local, fecha a demanda 001, grava o snapshot mensal e imprime uma checagem de frete em uma linha. Nenhuma credencial de warehouse é necessária.
+`make demo` baixa o extrato público de e-commerce da Olist quando consegue e, na falta dele, monta uma semente sintética com as mesmas tabelas. Em seguida roda o dbt em DuckDB local, fecha o pedido 001, grava o snapshot mensal e imprime uma checagem de frete em uma linha. Nenhuma credencial de warehouse é necessária.
 
 Para começar sem rede:
 
@@ -35,9 +37,9 @@ flowchart TD
   F --> G[Close: validador, registry e merge commit]
 ```
 
-Cada demanda é uma pasta `requests/NNN-slug/` e um item em `requests/registry.yaml`. O registry é o único índice. O status de ciclo de vida é `open`, `in_spec`, `in_build`, `in_interpretation`, `closed` ou `paused`. Cada transição tem data e motivo. O outcome de fechamento é um campo separado: `complete`, `partial` ou `blocked`. Uma demanda `paused` não pode ter outcome.
+Cada pedido é uma pasta `requests/NNN-slug/` e um item em `requests/registry.yaml`. O registry é o único índice. O status de ciclo de vida é `open`, `in_spec`, `in_build`, `in_interpretation`, `closed` ou `paused`. Cada transição tem data e motivo. O outcome de fechamento é um campo separado: `complete`, `partial` ou `blocked`. Um pedido `paused` não pode ter outcome.
 
-Fluxo git: um worktree e um branch por demanda, no nome `worktree-request-NNN-slug`. Abra com `git worktree add ../worktree-request-NNN-slug -b worktree-request-NNN-slug` e feche, a partir do branch base, com `git merge --no-ff worktree-request-NNN-slug`. O merge commit guarda a demanda como uma unidade de histórico. `python scripts/request_worktree.py` imprime esses comandos e não os executa. Antes do merge, `python scripts/validate_completion.py --request NNN` imprime `complete`, `partial` ou `blocked`. Um outcome `blocked` deixa a demanda aberta. Prefixos de commit: `feat(requests)`, `docs(knowledge)`, `docs(quick-check)`, `chore`.
+Fluxo git: um worktree e um branch por pedido, no nome `worktree-request-NNN-slug`. Abra com `git worktree add ../worktree-request-NNN-slug -b worktree-request-NNN-slug` e feche, a partir do branch base, com `git merge --no-ff worktree-request-NNN-slug`. O merge commit guarda o pedido como uma unidade de histórico. `python scripts/request_worktree.py` imprime esses comandos e não os executa. Antes do merge, `python scripts/validate_completion.py --request NNN` imprime `complete`, `partial` ou `blocked`. Um outcome `blocked` deixa o pedido aberto. Prefixos de commit: `feat(requests)`, `docs(knowledge)`, `docs(quick-check)`, `chore`.
 
 ## Princípios
 
@@ -46,13 +48,13 @@ Fluxo git: um worktree e um branch por demanda, no nome `worktree-request-NNN-sl
 3. Decisão fica escrita. `ARCHITECTURE.md` e `insights.md` guardam histórico só de inclusão.
 4. Integridade bloqueia. Anomalia alerta. A severidade é explícita.
 5. Métrica é `certified`, `indicative` ou `blocked`. Nada é publicado sem status.
-6. Uma fonte de verdade por assunto: o registry, o card da métrica, a config da demanda.
+6. Uma fonte de verdade por assunto: o registry, o card da métrica, a config do pedido.
 7. Número novo reconcilia com uma fonte independente, ou a diferença fica declarada.
-8. O repositório nasce privado e nasce sem dado proprietário.
+8. O repositório nasce sem dado proprietário. Se você adotar isto com dado interno, comece por uma cópia privada.
 
 ## O que o exemplo responde
 
-A demanda `001-monthly-conversion-and-revenue` pergunta como andaram os pedidos entregues e a receita, qual foi o ticket, quantos clientes maduros voltaram e que parcela das visitas virou pedido.
+O pedido `001-monthly-conversion-and-revenue` pergunta como andaram os pedidos entregues e a receita, qual foi o ticket, quantos clientes maduros voltaram e que parcela das visitas virou pedido.
 
 | Métrica | Status | Definição |
 | --- | --- | --- |
@@ -73,7 +75,7 @@ Uma verificação rápida está em `quick-checks/2018-08-20-freight-share/`. Ela
 | Caminho | Conteúdo |
 | --- | --- |
 | `CLAUDE.md`, `.claude/skills/` | O que um agente pode implementar, e o que deixa para um humano |
-| `requests/` | Uma pasta por demanda, mais `registry.yaml` |
+| `requests/` | Uma pasta por pedido, mais `registry.yaml` |
 | `quick-checks/` | Uma checagem datada, com notes e script |
 | `knowledge/` | Notas duráveis e o catálogo de métricas |
 | `products/` | Um produto de dados publicado: `contract.md`, `asset.yaml` e `CHANGELOG.md` |
@@ -125,11 +127,11 @@ Cada pasta em `products/` é um produto de dados publicado. `asset.yaml` registr
 
 `.mcp.json` chama `scripts/mcp_wrapper.py`. Tokens ficam no ambiente ou num perfil OAuth fora do repositório. O perfil precisa de `read_only: true`. O JSON não carrega credencial.
 
-`scripts/validate_structure.py` confere pastas e arquivos obrigatórios, o registry, o catálogo de métricas, os documentos de cada demanda, o ativo de cada produto de dados e os invariantes de cada automação. O CI roda esse script. `scripts/check_language.py` (`make language`) falha se um token em português ou uma letra acentuada aparecer fora deste arquivo e da licença. O `docs/ARCHITECTURE.md` de uma automação declara os invariantes, inclusive zero chamadas de modelo de linguagem em tempo de execução.
+`scripts/validate_structure.py` confere pastas e arquivos obrigatórios, o registry, o catálogo de métricas, os documentos de cada pedido, o ativo de cada produto de dados e os invariantes de cada automação. O CI roda esse script. `scripts/check_language.py` (`make language`) falha se um token em português ou uma letra acentuada aparecer fora deste arquivo e da licença. O `docs/ARCHITECTURE.md` de uma automação declara os invariantes, inclusive zero chamadas de modelo de linguagem em tempo de execução.
 
 ## O que fica fora do git
 
-Extratos brutos, arquivos de warehouse, saídas de demanda, snapshots de automação, o `target/` do dbt e logs ficam sem rastreio. SQL, Python, YAML e Markdown ficam no git. O `.gitignore` lista os padrões pesados, entre eles `*.duckdb`, `*.parquet`, `*.xlsx`, `requests/**/outputs/`, `automations/**/snapshots/` e `dbt/target/`.
+Extratos brutos, arquivos de warehouse, saídas de pedido, snapshots de automação, o `target/` do dbt e logs ficam sem rastreio. SQL, Python, YAML e Markdown ficam no git. O `.gitignore` lista os padrões pesados, entre eles `*.duckdb`, `*.parquet`, `*.xlsx`, `requests/**/outputs/`, `automations/**/snapshots/` e `dbt/target/`.
 
 ## Manter nomes internos fora
 
@@ -162,7 +164,7 @@ A semente sintética é original, determinística (`seed=42`) e pequena. A integ
 - `.env`, para cada conector remoto que você for usar de verdade.
 - `.mcp.json`, que chama `scripts/mcp_wrapper.py` e não carrega credencial.
 
-O fluxo de demandas, o registry, o catálogo `certified` / `indicative` / `blocked`, os gates de block e warn, o snapshot congelado e os logs de decisão só de inclusão são o método. As métricas da Olist são o exemplo público. O identificador do conceito de maturidade é `metric-maturity`; a prosa pode chamar isso de maturity ladder.
+O fluxo de pedidos, o registry, o catálogo `certified` / `indicative` / `blocked`, os gates de block e warn, o snapshot congelado e os logs de decisão só de inclusão são o método. As métricas da Olist são o exemplo público. O identificador do conceito de maturidade é `metric-maturity`; a prosa pode chamar isso de maturity ladder.
 
 O inglês em `README.md` é o canônico.
 
